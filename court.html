@@ -373,12 +373,10 @@
     </div>
     <div id="stats-3d" class="chart-block active">
       <h2>The sources of the scoring champions' points visualized in 3D</h2>
-      <div style="display: flex; justify-content: center; gap: 20px;">
+      <div style="display: flex; justify-content: center; align-items: flex-start; gap: 20px;">
         <div id="stats-container" style="width: 800px; height: 600px;"></div>
-        <div id="player-selector-3d">
-          <div class="checkbox-container">
-            <!-- Checkboxes will be added here -->
-          </div>
+        <div class="checkbox-container" id="scoringCheckboxContainer" style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          <!-- Checkboxes will be added here -->
         </div>
       </div>
     </div>
@@ -832,7 +830,8 @@
         const data = await d3.csv("scoring.csv");
         
         // Create checkbox container
-        const checkboxContainer = document.querySelector('.checkbox-container');
+        const checkboxContainer = document.getElementById('scoringCheckboxContainer');
+        checkboxContainer.innerHTML = ''; // Clear container
         
         // Add "All Players" option
         const allPlayersDiv = document.createElement('div');
@@ -840,11 +839,11 @@
         
         const allPlayersCheckbox = document.createElement('input');
         allPlayersCheckbox.type = 'checkbox';
-        allPlayersCheckbox.id = 'all-players';
+        allPlayersCheckbox.id = 'all-scoring-players';
         allPlayersCheckbox.value = 'all';
         
         const allPlayersLabel = document.createElement('label');
-        allPlayersLabel.htmlFor = 'all-players';
+        allPlayersLabel.htmlFor = 'all-scoring-players';
         allPlayersLabel.textContent = 'All Players';
         
         allPlayersDiv.appendChild(allPlayersCheckbox);
@@ -872,7 +871,7 @@
 
         // Add event listener for "All Players" checkbox
         allPlayersCheckbox.addEventListener('change', function() {
-          const checkboxes = document.querySelectorAll('.player-checkbox input:not(#all-players)');
+          const checkboxes = document.querySelectorAll('#scoringCheckboxContainer .player-checkbox input:not(#all-scoring-players)');
           checkboxes.forEach(checkbox => {
             checkbox.checked = this.checked;
           });
@@ -880,9 +879,9 @@
         });
 
         // Add event listeners for individual checkboxes
-        document.querySelectorAll('.player-checkbox input:not(#all-players)').forEach(checkbox => {
+        document.querySelectorAll('#scoringCheckboxContainer .player-checkbox input:not(#all-scoring-players)').forEach(checkbox => {
           checkbox.addEventListener('change', function() {
-            const allChecked = Array.from(document.querySelectorAll('.player-checkbox input:not(#all-players)'))
+            const allChecked = Array.from(document.querySelectorAll('#scoringCheckboxContainer .player-checkbox input:not(#all-scoring-players)'))
               .every(cb => cb.checked);
             allPlayersCheckbox.checked = allChecked;
             updateVisualization();
@@ -974,7 +973,7 @@
             // Add player name label
             const nameCanvas = document.createElement('canvas');
             const nameContext = nameCanvas.getContext('2d');
-            nameCanvas.width = 256;
+            nameCanvas.width = 128;
             nameCanvas.height = 64;
             nameContext.fillStyle = '#2c3e50';
             nameContext.font = 'bold 20px Arial';
@@ -999,11 +998,11 @@
         }
 
         function updateVisualization() {
-          const selectedPlayers = Array.from(document.querySelectorAll('.player-checkbox input:checked'))
+          const selectedPlayers = Array.from(document.querySelectorAll('#scoringCheckboxContainer .player-checkbox input:checked'))
             .map(checkbox => checkbox.value);
           
           let filteredData = data;
-          if (selectedPlayers.length > 0) {
+          if (selectedPlayers.length > 0 && !selectedPlayers.includes('all')) {
             filteredData = filteredData.filter(d => 
               selectedPlayers.includes(`${d.season}-${d['scoring champ']}`)
             );
@@ -1014,9 +1013,6 @@
         // Initialize Three.js
         initThreeJS();
         animate();
-
-        // Add event listener for checkbox changes
-        document.querySelector('.checkbox-container').addEventListener('change', updateVisualization);
 
         // Initial visualization
         updateVisualization();
