@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Basketball Court</title>
+  <style>
+    body { 
+      margin: 0; 
+      padding: 20px; 
+      background: url('background.png') no-repeat center center fixed;
+      background-size: cover;
+    }
+    .charts-container {
+      background-color: rgba(255, 255, 255, 0.95);
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    }
+    .court-svg { 
+      display: block; 
+      margin: auto; 
+      background: url('background.png') no-repeat center center;
+      background-size: cover;
+    }
+    .line { fill: none; stroke: rgb(0, 0, 0); stroke-width: 2; }
+    .key { fill: none; stroke: rgb(0, 0, 0); stroke-width: 2; }
+    .hotspot { fill: rgb(0, 82, 97); opacity: 0.6; }
+    .tooltip {
+      position: absolute;
+      background: rgba(0,0,0,0.7);
+      color: white;
+      padding: 10px;
+      border-radius: 10px;
+      pointer-events: none;
+      font-size: 15px;
+      opacity: 0;
+    }
+    .chart-block {
+      display: none;
+      margin: 40px 0;
+      text-align: center;
+    }
+    .chart-block.active {
+      display: block;
+    }
+    .chart-block h2 {
+      color: rgb(0, 0, 0);
+      font-family: sans-serif;
+      font-size: 20px;
+      margin: 10px 0;
+    }
+    #season-selector {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 1000;
+    }
+    #season-selector select {
+      padding: 8px 16px;
+      font-size: 16px;
+      border-radius: 4px;
+      border: 2px solid #054e64;
+      background-color: white;
+      cursor: pointer;
+    }
+    #season-selector select:focus {
+      outline: none;
+      border-color: #054e64;
+      box-shadow: 0 0 5px rgba(5, 78, 100, 0.3);
+    }
+    #mvp-stats {
+      width: 100%;
+      max-width: 800px;
+      margin: 40px auto;
+    }
+    #year-selector {
+      margin: 20px 0;
+      text-align: center;
+    }
+    #year-selector select {
+      padding: 8px 16px;
+      font-size: 16px;
+      border-radius: 4px;
+      border: 2px solid #054e64;
+      background-color: white;
+      cursor: pointer;
+    }
+    #year-selector select:focus {
+      outline: none;
+      border-color: #054e64;
+      box-shadow: 0 0 5px rgba(5, 78, 100, 0.3);
+    }
+    #radarChart {
+      background-color: white;
+      border-radius: 8px;
+      padding: 10px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      width: 500px !important;
+      height: 500px !important;
+    }
+    .player-list {
+      margin-top: 20px;
+      text-align: left;
+      font-size: 14px;
+      max-height: 600px;
+      overflow-y: auto;
+      padding: 10px;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .player-list div {
+      margin: 5px 0;
+      padding: 5px;
+      border-bottom: 1px solid #eee;
+    }
+    .charts-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      margin-top: 20px;
+    }
+    #dpoy-stats {
+      width: 100%;
+      max-width: 800px;
+      margin: 40px auto;
+    }
+    #dpoyChart {
+      background-color: white;
+      border-radius: 8px;
+      padding: 10px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      width: 500px !important;
+      height: 500px !important;
+    }
+    #stats-3d {
+      width: 100%;
+      max-width: 800px;
+      margin: 40px auto;
+    }
+    #year-selector-3d, #player-selector-3d {
+      margin: 20px 0;
+      text-align: center;
+    }
+    #year-selector-3d select, #player-selector-3d select {
+      padding: 8px 16px;
+      font-size: 16px;
+      border-radius: 4px;
+      border: 2px solid #054e64;
+      background-color: white;
+      cursor: pointer;
+      margin: 0 10px;
+    }
+    #year-selector-3d select:focus, #player-selector-3d select:focus {
+      outline: none;
+      border-color: #054e64;
+      box-shadow: 0 0 5px rgba(5, 78, 100, 0.3);
+    }
+    #player-selector-3d select {
+      padding: 8px 16px;
+      font-size: 16px;
+      border-radius: 4px;
+      border: 2px solid #054e64;
+      background-color: white;
+      cursor: pointer;
+      margin: 0 10px;
+      min-width: 300px;
+    }
+    #player-selector-3d select option {
+      padding: 5px;
+    }
+    #player-selector-3d select option:checked {
+      background-color: #054e64;
+      color: white;
+    }
+    .checkbox-container {
+      max-height: 600px;
+      overflow-y: auto;
+      border: 2px solid #2c3e50;
+      border-radius: 8px;
+      padding: 10px;
+      background-color: white;
+      width: 250px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .player-checkbox {
+      display: flex;
+      align-items: center;
+      padding: 8px;
+      margin: 2px 0;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: background-color 0.2s;
+    }
+    .player-checkbox:hover {
+      background-color: #f5f6fa;
+    }
+    .player-checkbox input {
+      margin-right: 10px;
+      cursor: pointer;
+      width: 16px;
+      height: 16px;
+    }
+    .player-checkbox label {
+      cursor: pointer;
+      font-size: 14px;
+      color: #2c3e50;
+    }
+    .all-players-option {
+      border-bottom: 2px solid #2c3e50;
+      margin-bottom: 10px;
+      padding-bottom: 10px;
+      font-weight: bold;
+    }
+  </style>
+  <script src="https://d3js.org/d3.v6.min.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+  <div id="tooltip" class="tooltip"></div>
+  <div class="charts-container">
+    <div id="charts">
+      <div id="chart-2024" class="chart-block">
+        <h2>2023-24 NBA season field goal attempts</h2>
+        <svg id="court1-svg" class="court-svg" width="500" height="470" viewBox="0 0 500 470">
+          <!-- Background image -->
+          <image href="wooden-boards.jpg" x="0" y="0" width="500" height="470" preserveAspectRatio="none" />
+          <!-- Boundary -->
+          <rect class="line" x="0" y="0" width="500" height="470" />
+          <!-- Hoop -->
+          <circle class="line" cx="250" cy="430" r="7" />
+          <!-- Backboard -->
+          <line class="line" x1="220" y1="400" x2="280" y2="400" />
+          <!-- Paint (key) -->
+          <rect class="key" x="170" y="280" width="160" height="150" />
+          <!-- Free throw circle -->
+          <circle class="line" cx="250" cy="280" r="60" />
+          <!-- Restricted area arc -->
+          <path class="line" d="M210 430 A40 40 0 0 0 290 430" />
+          <!-- Three-point corner lines -->
+          <line class="line" x1="30" y1="470" x2="30" y2="340.5" />
+          <line class="line" x1="470" y1="470" x2="470" y2="340.5" />
+          <!-- Three-point arc -->
+          <path class="line" d="M30 340.5 A237.5 237.5 0 0 1 470 340.5" />
+        </svg>
+      </div>
+      <div id="season-selector">
+        <select id="season-select">
+          <option value="2004">2003-04 Season</option>
+          <option value="2009">2008-09 Season</option>
+          <option value="2014">2013-14 Season</option>
+          <option value="2019">2018-19 Season</option>
+          <option value="2024">2023-24 Season</option>
+        </select>
+      </div>
+      <div id="chart-2004" class="chart-block active">
+        <h2>2003-04 NBA season field goal attempts</h2>
+        <svg id="court2-svg" class="court-svg" width="500" height="470" viewBox="0 0 500 470">
+          <!-- Background image -->
+          <image href="wooden-boards.jpg" x="0" y="0" width="500" height="470" preserveAspectRatio="none" />
+          <!-- Boundary -->
+          <rect class="line" x="0" y="0" width="500" height="470" />
+          <!-- Hoop -->
+          <circle class="line" cx="250" cy="430" r="7" />
+          <!-- Backboard -->
+          <line class="line" x1="220" y1="400" x2="280" y2="400" />
+          <!-- Paint (key) -->
+          <rect class="key" x="170" y="280" width="160" height="150" />
+          <!-- Free throw circle -->
+          <circle class="line" cx="250" cy="280" r="60" />
+          <!-- Restricted area arc -->
+          <path class="line" d="M210 430 A40 40 0 0 0 290 430" />
+          <!-- Three-point corner lines -->
+          <line class="line" x1="30" y1="470" x2="30" y2="340.5" />
+          <line class="line" x1="470" y1="470" x2="470" y2="340.5" />
+          <!-- Three-point arc -->
+          <path class="line" d="M30 340.5 A237.5 237.5 0 0 1 470 340.5" />
+        </svg>
+      </div>
+      <div id="chart-2009" class="chart-block">
+        <h2>2008-09 NBA season field goal attempts</h2>
+        <svg id="court3-svg" class="court-svg" width="500" height="470" viewBox="0 0 500 470">
+          <!-- Background image -->
+          <image href="wooden-boards.jpg" x="0" y="0" width="500" height="470" preserveAspectRatio="none" />
+          <!-- Boundary -->
+          <rect class="line" x="0" y="0" width="500" height="470" />
+          <!-- Hoop -->
+          <circle class="line" cx="250" cy="430" r="7" />
+          <!-- Backboard -->
+          <line class="line" x1="220" y1="400" x2="280" y2="400" />
+          <!-- Paint (key) -->
+          <rect class="key" x="170" y="280" width="160" height="150" />
+          <!-- Free throw circle -->
+          <circle class="line" cx="250" cy="280" r="60" />
+          <!-- Restricted area arc -->
+          <path class="line" d="M210 430 A40 40 0 0 0 290 430" />
+          <!-- Three-point corner lines -->
+          <line class="line" x1="30" y1="470" x2="30" y2="340.5" />
+          <line class="line" x1="470" y1="470" x2="470" y2="340.5" />
+          <!-- Three-point arc -->
+          <path class="line" d="M30 340.5 A237.5 237.5 0 0 1 470 340.5" />
+        </svg>
+      </div>
+      <div id="chart-2014" class="chart-block">
+        <h2>2013-14 NBA season field goal attempts</h2>
+        <svg id="court4-svg" class="court-svg" width="500" height="470" viewBox="0 0 500 470">
+          <!-- Background image -->
+          <image href="wooden-boards.jpg" x="0" y="0" width="500" height="470" preserveAspectRatio="none" />
+          <!-- Boundary -->
+          <rect class="line" x="0" y="0" width="500" height="470" />
+          <!-- Hoop -->
+          <circle class="line" cx="250" cy="430" r="7" />
+          <!-- Backboard -->
+          <line class="line" x1="220" y1="400" x2="280" y2="400" />
+          <!-- Paint (key) -->
+          <rect class="key" x="170" y="280" width="160" height="150" />
+          <!-- Free throw circle -->
+          <circle class="line" cx="250" cy="280" r="60" />
+          <!-- Restricted area arc -->
+          <path class="line" d="M210 430 A40 40 0 0 0 290 430" />
+          <!-- Three-point corner lines -->
+          <line class="line" x1="30" y1="470" x2="30" y2="340.5" />
+          <line class="line" x1="470" y1="470" x2="470" y2="340.5" />
+          <!-- Three-point arc -->
+          <path class="line" d="M30 340.5 A237.5 237.5 0 0 1 470 340.5" />
+        </svg>
+      </div>
+      <div id="chart-2019" class="chart-block">
+        <h2>2018-19 NBA season field goal attempts</h2>
+        <svg id="court5-svg" class="court-svg" width="500" height="470" viewBox="0 0 500 470">
+          <!-- Background image -->
+          <image href="wooden-boards.jpg" x="0" y="0" width="500" height="470" preserveAspectRatio="none" />
+          <!-- Boundary -->
+          <rect class="line" x="0" y="0" width="500" height="470" />
+          <!-- Hoop -->
+          <circle class="line" cx="250" cy="430" r="7" />
+          <!-- Backboard -->
+          <line class="line" x1="220" y1="400" x2="280" y2="400" />
+          <!-- Paint (key) -->
+          <rect class="key" x="170" y="280" width="160" height="150" />
+          <!-- Free throw circle -->
+          <circle class="line" cx="250" cy="280" r="60" />
+          <!-- Restricted area arc -->
+          <path class="line" d="M210 430 A40 40 0 0 0 290 430" />
+          <!-- Three-point corner lines -->
+          <line class="line" x1="30" y1="470" x2="30" y2="340.5" />
+          <line class="line" x1="470" y1="470" x2="470" y2="340.5" />
+          <!-- Three-point arc -->
+          <path class="line" d="M30 340.5 A237.5 237.5 0 0 1 470 340.5" />
+        </svg>
+      </div>
+    </div>
+    <div id="mvp-stats" class="chart-block active">
+      <h2>MVP Stats Comparison (Percentile)</h2>
+      <div style="display: flex; justify-content: center; align-items: flex-start; gap: 20px;">
+        <canvas id="radarChart" width="700" height="700"></canvas>
+        <div class="checkbox-container" id="mvpCheckboxContainer" style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          <!-- Checkboxes will be added here -->
+        </div>
+      </div>
+    </div>
+    <div id="dpoy-stats" class="chart-block active">
+      <h2>DPOY Stats Analysis</h2>
+      <div style="display: flex; justify-content: center; align-items: flex-start; gap: 20px;">
+        <div style="width: 600px; height: 500px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          <canvas id="dpoyChart"></canvas>
+        </div>
+        <div class="player-list" id="dpoyPlayerList" style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"></div>
+      </div>
+    </div>
+    <div id="stats-3d" class="chart-block active">
+      <h2>The sources of the scoring champions' points visualized in 3D</h2>
+      <div style="display: flex; justify-content: center; gap: 20px;">
+        <div id="stats-container" style="width: 800px; height: 600px;"></div>
+        <div id="player-selector-3d">
+          <div class="checkbox-container">
+            <!-- Checkboxes will be added here -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const svg1 = d3.select("#court1-svg");
+    const svg2 = d3.select("#court2-svg");
+    const svg3 = d3.select("#court3-svg");
+    const svg4 = d3.select("#court4-svg");
+    const svg5 = d3.select("#court5-svg");
+    const tooltip = d3.select("#tooltip");
+    const width = +svg1.attr("width");
+    const height = +svg1.attr("height");
+    const xScale = d3.scaleLinear().domain([-25,25]).range([0,width]);
+    const yScale = d3.scaleLinear().domain([0,47]).range([height,0]);
+
+    // Function to load data from either CSV or XLSX
+    async function loadData(filename) {
+      const extension = filename.split('.').pop().toLowerCase();
+      
+      if (extension === 'xlsx') {
+        const response = await fetch(filename);
+        const arrayBuffer = await response.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const data = XLSX.utils.sheet_to_json(firstSheet);
+        return data.map(d => ({
+          LOC_X: +d.LOC_X,
+          LOC_Y: +d.LOC_Y,
+          count: +d.count
+        }));
+      } else {
+        return d3.csv(filename, d => {
+          d.LOC_X = +d.LOC_X;
+          d.LOC_Y = +d.LOC_Y;
+          d.count = +d.count;
+          return d;
+        });
+      }
+    }
+
+    // Load centroid datasets for all seasons and use a shared radius scale
+    Promise.all([
+      loadData("shot_centroids2024.csv"),
+      loadData("shot_centroids2004.csv"),
+      loadData("shot_centroids2009.csv"),
+      loadData("shot_centroids2014.csv"),
+      loadData("shot_centroids2019.csv")
+    ]).then(([data24, data04, data09, data14, data19]) => {
+      const threshold = 400;
+      let data24Filtered = data24.filter(d => d.count >= threshold);
+      let data04Filtered = data04.filter(d => d.count >= threshold);
+      let data09Filtered = data09.filter(d => d.count >= threshold);
+      let data14Filtered = data14.filter(d => d.count >= threshold);
+      let data19Filtered = data19.filter(d => d.count >= threshold);
+
+      // Compute global count extent
+      const allCounts = data24Filtered.concat(data04Filtered, data09Filtered, data14Filtered, data19Filtered).map(d => d.count);
+      const radiusScale = d3.scaleSqrt()
+        .domain(d3.extent(allCounts))
+        .range([3,20]);
+
+      function renderChart(svg, data) {
+        svg.selectAll("circle.hotspot").remove();
+        svg.selectAll("circle.hotspot")
+          .data(data)
+          .enter().append("circle")
+            .attr("class","hotspot")
+            .attr("cx", d => xScale(d.LOC_X))
+            .attr("cy", d => yScale(d.LOC_Y))
+            .attr("r", d => radiusScale(d.count))
+            .on("mouseover", (event, d) => {
+              tooltip.transition().duration(200).style("opacity", 0.9);
+              tooltip.html(`<strong>Shots:</strong> ${d.count}`);
+            })
+            .on("mousemove", (event) => {
+              tooltip.style("left", (event.pageX+10)+"px").style("top", (event.pageY-28)+"px");
+            })
+            .on("mouseout", () => {
+              tooltip.transition().duration(500).style("opacity",0);
+            });
+      }
+
+      renderChart(svg1, data24Filtered);
+      renderChart(svg2, data04Filtered);
+      renderChart(svg3, data09Filtered);
+      renderChart(svg4, data14Filtered);
+      renderChart(svg5, data19Filtered);
+
+      // Setup season selector
+      d3.select("#season-select").on("change", function() {
+        const selectedSeason = this.value;
+        d3.selectAll(".chart-block").classed("active", false);
+        d3.select(`#chart-${selectedSeason}`).classed("active", true);
+        d3.select("#mvp-stats").classed("active", true);
+      });
+    });
+
+    let radarChart = null;
+
+    async function loadMVPData() {
+      try {
+        // Load MVP data from CSV
+        const data = await d3.csv("mvp.csv", d => {
+          // Remove % sign and convert to number
+          const cleanValue = (val) => parseFloat(val.replace('%', ''));
+          
+          return {
+            Player: d.mvp,
+            Season: d.season,
+            PPG: cleanValue(d.ppg),
+            RPG: cleanValue(d.rpg),
+            APG: cleanValue(d.apg),
+            SPG: cleanValue(d.spg),
+            BPG: cleanValue(d.bpg),
+            TOVPG: cleanValue(d.tovpg),
+            PFPG: cleanValue(d.pfpg),
+            FG: cleanValue(d['fg%'])
+          };
+        });
+
+        // Create checkbox container
+        const checkboxContainer = document.getElementById('mvpCheckboxContainer');
+        checkboxContainer.innerHTML = ''; // Clear container
+        
+        // Add "All Players" option
+        const allPlayersDiv = document.createElement('div');
+        allPlayersDiv.className = 'player-checkbox all-players-option';
+        
+        const allPlayersCheckbox = document.createElement('input');
+        allPlayersCheckbox.type = 'checkbox';
+        allPlayersCheckbox.id = 'all-mvp-players';
+        allPlayersCheckbox.value = 'all';
+        
+        const allPlayersLabel = document.createElement('label');
+        allPlayersLabel.htmlFor = 'all-mvp-players';
+        allPlayersLabel.textContent = 'All Players';
+        
+        allPlayersDiv.appendChild(allPlayersCheckbox);
+        allPlayersDiv.appendChild(allPlayersLabel);
+        checkboxContainer.appendChild(allPlayersDiv);
+
+        // Add individual player options in the same order as the CSV
+        data.forEach(player => {
+          const div = document.createElement('div');
+          div.className = 'player-checkbox';
+          
+          const checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+          checkbox.id = `mvp-${player.Season}-${player.Player}`;
+          checkbox.value = `${player.Season}-${player.Player}`;
+          
+          const label = document.createElement('label');
+          label.htmlFor = checkbox.id;
+          label.textContent = `${player.Season}: ${player.Player}`;
+          
+          div.appendChild(checkbox);
+          div.appendChild(label);
+          checkboxContainer.appendChild(div);
+        });
+
+        // Add event listener for "All Players" checkbox
+        allPlayersCheckbox.addEventListener('change', function() {
+          const checkboxes = document.querySelectorAll('#mvpCheckboxContainer .player-checkbox input:not(#all-mvp-players)');
+          checkboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+          });
+          updateChart();
+        });
+
+        // Add event listeners for individual checkboxes
+        document.querySelectorAll('#mvpCheckboxContainer .player-checkbox input:not(#all-mvp-players)').forEach(checkbox => {
+          checkbox.addEventListener('change', function() {
+            const allChecked = Array.from(document.querySelectorAll('#mvpCheckboxContainer .player-checkbox input:not(#all-mvp-players)'))
+              .every(cb => cb.checked);
+            allPlayersCheckbox.checked = allChecked;
+            updateChart();
+          });
+        });
+
+        function updateChart() {
+          const selectedPlayers = Array.from(document.querySelectorAll('#mvpCheckboxContainer .player-checkbox input:checked'))
+            .map(checkbox => checkbox.value);
+          
+          let filteredData = data;
+          if (selectedPlayers.length > 0 && !selectedPlayers.includes('all')) {
+            filteredData = filteredData.filter(d => 
+              selectedPlayers.includes(`${d.Season}-${d.Player}`)
+            );
+          }
+
+          const labels = ['PPG', 'RPG', 'APG', 'SPG', 'BPG', 'TOVPG', 'PFPG', 'FG%'];
+          
+          const datasets = filteredData.map(player => {
+            const color = `hsl(${Math.random() * 360}, 70%, 50%)`;
+            return {
+              label: player.Player,
+              data: [
+                player.PPG,
+                player.RPG,
+                player.APG,
+                player.SPG,
+                player.BPG,
+                player.TOVPG,
+                player.PFPG,
+                player.FG
+              ],
+              fill: true,
+              backgroundColor: `${color}33`,
+              borderColor: color,
+              pointBackgroundColor: color,
+              pointBorderColor: '#fff',
+              pointHoverBackgroundColor: '#fff',
+              pointHoverBorderColor: color
+            };
+          });
+
+          if (radarChart) {
+            radarChart.data.datasets = datasets;
+            radarChart.update();
+          } else {
+            const ctx = document.getElementById('radarChart').getContext('2d');
+            radarChart = new Chart(ctx, {
+              type: 'radar',
+              data: {
+                labels: labels,
+                datasets: datasets
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                elements: {
+                  line: {
+                    borderWidth: 2
+                  },
+                  point: {
+                    radius: 3
+                  }
+                },
+                scales: {
+                  r: {
+                    angleLines: {
+                      display: true,
+                      color: 'rgba(0, 0, 0, 0.2)'
+                    },
+                    grid: {
+                      color: 'rgba(0, 0, 0, 0.1)'
+                    },
+                    suggestedMin: 0,
+                    suggestedMax: 100,
+                    ticks: {
+                      stepSize: 20,
+                      color: 'rgba(0, 0, 0, 0.7)'
+                    }
+                  }
+                },
+                plugins: {
+                  legend: {
+                    display: false
+                  },
+                  title: {
+                    display: true,
+                    text: 'MVP Stats Comparison (Percentile)',
+                    font: {
+                      size: 16
+                    }
+                  }
+                }
+              }
+            });
+          }
+        }
+
+        // Initial chart creation
+        updateChart();
+        
+      } catch (error) {
+        console.error('Error loading CSV file:', error);
+      }
+    }
+
+    let dpoyChart = null;
+
+    async function loadDPOYData() {
+      try {
+        // Load the CSV file
+        const response = await fetch('dpoy.csv');
+        const csvText = await response.text();
+        const data = d3.csvParse(csvText);
+
+        // Process the data
+        const processedData = data.map(d => ({
+          player: d.dpoy,
+          season: d.season,
+          drpg: parseFloat(d.drbpg) || 0,        // Defensive Rebounds Per Game
+          spgPlusBpg: parseFloat(d['spg+ bpg']) || 0,  // Steals + Blocks Per Game
+          pfpg: parseFloat(d.pfpg) || 0          // Personal Fouls Per Game
+        }));
+
+        // Create the chart
+        const ctx = document.getElementById('dpoyChart');
+        if (!ctx) {
+          console.error("Could not find dpoyChart canvas element");
+          return;
+        }
+
+        // Destroy existing chart if it exists
+        if (dpoyChart) {
+          dpoyChart.destroy();
+        }
+
+        // Create new chart
+        dpoyChart = new Chart(ctx, {
+          type: 'scatter',
+          data: {
+            datasets: [{
+              data: processedData.map(d => ({
+                x: d.drpg,
+                y: d.spgPlusBpg,
+                r: 25,
+                player: d.player,
+                season: d.season,
+                pfpg: d.pfpg
+              })),
+              backgroundColor: processedData.map(d => {
+                const maxPFPG = Math.max(...processedData.map(p => p.pfpg));
+                const intensity = d.pfpg / maxPFPG;
+                // Using a more dramatic opacity range for higher contrast
+                return `rgba(234,82,111, ${0.2 + intensity * 0.8})`;
+              }),
+              borderColor: 'rgba(234,82,111, 1)',
+              borderWidth: 3,
+              pointRadius: 25,
+              pointHoverRadius: 30
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            elements: {
+              point: {
+                radius: 25,
+                hoverRadius: 30
+              }
+            },
+            scales: {
+              x: {
+                type: 'linear',
+                position: 'bottom',
+                title: {
+                  display: true,
+                  text: 'Defensive Rebounds Per Game',
+                  font: {
+                    size: 14,
+                    weight: 'bold'
+                  }
+                },
+                min: 0,
+                max: 12,
+                grid: {
+                  color: 'rgba(0, 0, 0, 0.1)'
+                }
+              },
+              y: {
+                type: 'linear',
+                title: {
+                  display: true,
+                  text: 'Steals + Blocks Per Game',
+                  font: {
+                    size: 14,
+                    weight: 'bold'
+                  }
+                },
+                min: 0,
+                max: 7,
+                grid: {
+                  color: 'rgba(0, 0, 0, 0.1)'
+                }
+              }
+            },
+            plugins: {
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    const point = context.raw;
+                    return [
+                      `Player: ${point.player}`,
+                      `Season: ${point.season}`,
+                      `DRPG: ${point.x.toFixed(1)}`,
+                      `SPG + BPG: ${point.y.toFixed(1)}`,
+                      `PFPG: ${point.pfpg.toFixed(1)}`
+                    ];
+                  }
+                }
+              },
+              legend: {
+                display: false
+              },
+              title: {
+                display: true,
+                text: 'DPOY Stats Analysis (Color intensity indicates PFPG)',
+                font: {
+                  size: 16,
+                  weight: 'bold'
+                },
+                padding: {
+                  top: 10,
+                  bottom: 10
+                }
+              }
+            }
+          }
+        });
+
+        // Update player list
+        const playerList = document.getElementById('dpoyPlayerList');
+        playerList.innerHTML = '<h3>Players</h3>';
+        processedData.forEach(player => {
+          const div = document.createElement('div');
+          div.style.padding = '5px';
+          div.style.borderBottom = '1px solid #eee';
+          div.textContent = `${player.season}: ${player.player} (DRPG: ${player.drpg.toFixed(1)}, SPG+BPG: ${player.spgPlusBpg.toFixed(1)})`;
+          playerList.appendChild(div);
+        });
+
+      } catch (error) {
+        console.error('Error loading DPOY data:', error);
+      }
+    }
+
+    // Load both MVP and DPOY data when the page loads
+    document.addEventListener('DOMContentLoaded', () => {
+      loadMVPData();
+      loadDPOYData();
+    });
+
+    let scene, camera, renderer, controls;
+    let statsBlocks = [];
+
+    async function loadScoringData() {
+      try {
+        const data = await d3.csv("scoring.csv");
+        
+        // Create checkbox container
+        const checkboxContainer = document.querySelector('.checkbox-container');
+        
+        // Add "All Players" option
+        const allPlayersDiv = document.createElement('div');
+        allPlayersDiv.className = 'player-checkbox all-players-option';
+        
+        const allPlayersCheckbox = document.createElement('input');
+        allPlayersCheckbox.type = 'checkbox';
+        allPlayersCheckbox.id = 'all-players';
+        allPlayersCheckbox.value = 'all';
+        
+        const allPlayersLabel = document.createElement('label');
+        allPlayersLabel.htmlFor = 'all-players';
+        allPlayersLabel.textContent = 'All Players';
+        
+        allPlayersDiv.appendChild(allPlayersCheckbox);
+        allPlayersDiv.appendChild(allPlayersLabel);
+        checkboxContainer.appendChild(allPlayersDiv);
+        
+        // Add individual player options
+        data.forEach(player => {
+          const div = document.createElement('div');
+          div.className = 'player-checkbox';
+          
+          const checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+          checkbox.id = `${player.season}-${player['scoring champ']}`;
+          checkbox.value = `${player.season}-${player['scoring champ']}`;
+          
+          const label = document.createElement('label');
+          label.htmlFor = checkbox.id;
+          label.textContent = `${player.season}: ${player['scoring champ']}`;
+          
+          div.appendChild(checkbox);
+          div.appendChild(label);
+          checkboxContainer.appendChild(div);
+        });
+
+        // Add event listener for "All Players" checkbox
+        allPlayersCheckbox.addEventListener('change', function() {
+          const checkboxes = document.querySelectorAll('.player-checkbox input:not(#all-players)');
+          checkboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+          });
+          updateVisualization();
+        });
+
+        // Add event listeners for individual checkboxes
+        document.querySelectorAll('.player-checkbox input:not(#all-players)').forEach(checkbox => {
+          checkbox.addEventListener('change', function() {
+            const allChecked = Array.from(document.querySelectorAll('.player-checkbox input:not(#all-players)'))
+              .every(cb => cb.checked);
+            allPlayersCheckbox.checked = allChecked;
+            updateVisualization();
+          });
+        });
+
+        function initThreeJS() {
+          scene = new THREE.Scene();
+          scene.background = new THREE.Color(0xf0f0f0);
+          camera = new THREE.PerspectiveCamera(75, 800 / 600, 0.1, 1000);
+          renderer = new THREE.WebGLRenderer({ antialias: true });
+          renderer.setSize(800, 600);
+          document.getElementById('stats-container').appendChild(renderer.domElement);
+
+          // Add lights
+          const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+          scene.add(ambientLight);
+          const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+          directionalLight.position.set(10, 10, 10);
+          scene.add(directionalLight);
+
+          // Add controls
+          controls = new THREE.OrbitControls(camera, renderer.domElement);
+          controls.enableDamping = true;
+          controls.dampingFactor = 0.1;
+          controls.rotateSpeed = 0.5; // Slower rotation
+          controls.zoomSpeed = 0.8; // Slower zoom
+          controls.panSpeed = 0.5; // Slower panning
+          controls.minDistance = 5; // Minimum zoom distance
+          controls.maxDistance = 30; // Maximum zoom distance
+          controls.maxPolarAngle = Math.PI / 2; // Prevent going below the ground
+          controls.minPolarAngle = 0; // Prevent going above the top
+          controls.enablePan = true; // Enable panning
+          controls.screenSpacePanning = true; // Pan in screen space
+          controls.autoRotate = false; // Disable auto-rotation
+          controls.autoRotateSpeed = 2.0; // Speed of auto-rotation if enabled
+
+          camera.position.set(12, 12, 12); // Closer initial position
+          controls.update();
+        }
+
+        function createStatsBlocks(filteredData) {
+          // Clear existing blocks
+          statsBlocks.forEach(block => scene.remove(block));
+          statsBlocks = [];
+
+          const stats = [
+            { name: '2P/G', key: 'p from 2p/g', color: 0x3498db }, // Blue
+            { name: '3P/G', key: 'p from 3p/g', color: 0xe74c3c }, // Red
+            { name: 'FT/G', key: 'p from ft/g', color: 0x2ecc71 }  // Green
+          ];
+          
+          filteredData.forEach((player, index) => {
+            const group = new THREE.Group();
+            
+            stats.forEach((stat, statIndex) => {
+              const value = parseFloat(player[stat.key]) || 0;
+              const height = value * 0.3; // Reduced height scaling
+              
+              const geometry = new THREE.BoxGeometry(0.8, height, 0.8); // Slightly smaller blocks
+              const material = new THREE.MeshPhongMaterial({ 
+                color: stat.color,
+                transparent: true,
+                opacity: 0.9
+              });
+              
+              const block = new THREE.Mesh(geometry, material);
+              block.position.set(statIndex * 1.5 - 1.5, height/2, index * 1.5 - 4); // Reduced spacing
+              
+              // Add text label
+              const canvas = document.createElement('canvas');
+              const context = canvas.getContext('2d');
+              canvas.width = 256;
+              canvas.height = 64;
+              context.fillStyle = '#2c3e50';
+              context.font = 'bold 20px Arial';
+              context.fillText(`${stat.name}: ${value.toFixed(1)}`, 10, 32);
+              
+              const texture = new THREE.CanvasTexture(canvas);
+              const labelMaterial = new THREE.SpriteMaterial({ map: texture });
+              const label = new THREE.Sprite(labelMaterial);
+              label.position.set(statIndex * 1.5 - 1.5, height + 0.5, index * 1.5 - 4);
+              label.scale.set(1.5, 0.4, 1);
+              
+              group.add(block);
+              group.add(label);
+            });
+            
+            // Add player name label
+            const nameCanvas = document.createElement('canvas');
+            const nameContext = nameCanvas.getContext('2d');
+            nameCanvas.width = 256;
+            nameCanvas.height = 64;
+            nameContext.fillStyle = '#2c3e50';
+            nameContext.font = 'bold 20px Arial';
+            nameContext.fillText(player['scoring champ'], 10, 32);
+            
+            const nameTexture = new THREE.CanvasTexture(nameCanvas);
+            const nameMaterial = new THREE.SpriteMaterial({ map: nameTexture });
+            const nameLabel = new THREE.Sprite(nameMaterial);
+            nameLabel.position.set(0, 0, index * 1.5 - 4);
+            nameLabel.scale.set(3, 0.4, 1);
+            
+            group.add(nameLabel);
+            scene.add(group);
+            statsBlocks.push(group);
+          });
+        }
+
+        function animate() {
+          requestAnimationFrame(animate);
+          controls.update();
+          renderer.render(scene, camera);
+        }
+
+        function updateVisualization() {
+          const selectedPlayers = Array.from(document.querySelectorAll('.player-checkbox input:checked'))
+            .map(checkbox => checkbox.value);
+          
+          let filteredData = data;
+          if (selectedPlayers.length > 0) {
+            filteredData = filteredData.filter(d => 
+              selectedPlayers.includes(`${d.season}-${d['scoring champ']}`)
+            );
+          }
+          createStatsBlocks(filteredData);
+        }
+
+        // Initialize Three.js
+        initThreeJS();
+        animate();
+
+        // Add event listener for checkbox changes
+        document.querySelector('.checkbox-container').addEventListener('change', updateVisualization);
+
+        // Initial visualization
+        updateVisualization();
+
+      } catch (error) {
+        console.error('Error loading scoring data:', error);
+      }
+    }
+
+    // Load scoring data when the page loads
+    loadScoringData();
+  </script>
+</body>
+</html>
