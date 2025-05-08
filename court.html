@@ -367,6 +367,21 @@
         <div class="player-list" id="dpoyPlayerList" style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"></div>
       </div>
     </div>
+
+    <!-- GSW Win/Loss Record Chart -->
+    <div id="gsw-chart" class="chart-block active">
+      <h2>Team Win/Loss Records Over Games</h2>
+      <div style="display: flex; justify-content: center; align-items: flex-start; gap: 20px;">
+        <div style="width: 800px; height: 600px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+          <canvas id="gswWinLossChart"></canvas>
+        </div>
+        <div class="checkbox-container" id="teamCheckboxContainer" style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+          <h3 style="margin-top: 0; color: #2c3e50; border-bottom: 2px solid #2c3e50; padding-bottom: 10px;">Toggle Lines</h3>
+          <!-- Checkboxes will be added here -->
+        </div>
+      </div>
+    </div>
+
     <div id="stats-3d" class="chart-block active">
       <h2>The sources of the scoring champions' points visualized in 3D</h2>
       <div style="display: flex; justify-content: center; align-items: flex-start; gap: 30px; padding: 20px;">
@@ -862,10 +877,221 @@
       }
     }
 
-    // Load both MVP and DPOY data when the page loads
+    // Load GSW win/loss data
+    async function loadGSWData() {
+        try {
+            const response = await fetch('book1.csv');
+            const csvText = await response.text();
+            const rows = csvText.split('\n').slice(1); // Skip header row
+            
+            const games = [];
+            const gswRecords = [];
+            const phiRecords = [];
+            const houRecords = [];
+            const gswTotalRecords = [];
+            const phiTotalRecords = [];
+            const houTotalRecords = [];
+            
+            rows.forEach(row => {
+                const columns = row.split(',');
+                if (columns[0] && columns[1] && columns[3] && columns[5]) { // Check if columns have data
+                    games.push(parseInt(columns[0]));
+                    gswRecords.push(parseInt(columns[1]));
+                    phiRecords.push(parseInt(columns[3]));
+                    houRecords.push(parseInt(columns[5]));
+                    gswTotalRecords.push(parseInt(columns[2])); // Using +/- GSW column
+                    phiTotalRecords.push(parseInt(columns[4])); // Using +/- PHI column
+                    houTotalRecords.push(parseInt(columns[6])); // Using +/- HOU column
+                }
+            });
+
+            // Create checkbox container
+            const checkboxContainer = document.getElementById('teamCheckboxContainer');
+            
+            // Define datasets with their properties
+            const datasets = [
+                {
+                    id: 'gsw-wl',
+                    label: 'GSW Win/Loss Record',
+                    data: gswRecords,
+                    borderColor: '#FFD700',
+                    backgroundColor: 'rgba(255, 215, 0, 0.1)',
+                    tension: 0.1,
+                    borderWidth: 2,
+                    fill: true
+                },
+                {
+                    id: 'phi-wl',
+                    label: 'PHI Win/Loss Record',
+                    data: phiRecords,
+                    borderColor: '#0000FF',
+                    backgroundColor: 'rgba(0, 0, 255, 0.1)',
+                    tension: 0.1,
+                    borderWidth: 2,
+                    fill: true
+                },
+                {
+                    id: 'hou-wl',
+                    label: 'HOU Win/Loss Record',
+                    data: houRecords,
+                    borderColor: '#FF0000',
+                    backgroundColor: 'rgba(255, 0, 0, 0.1)',
+                    tension: 0.1,
+                    borderWidth: 2,
+                    fill: true
+                },
+                {
+                    id: 'gsw-pm',
+                    label: 'GSW +/-',
+                    data: gswTotalRecords,
+                    borderColor: '#00FF00',
+                    borderDash: [5, 5],
+                    borderWidth: 3,
+                    fill: false,
+                    pointRadius: 0,
+                    tension: 0.1,
+                    yAxisID: 'y2'
+                },
+                {
+                    id: 'phi-pm',
+                    label: 'PHI +/-',
+                    data: phiTotalRecords,
+                    borderColor: '#00FFFF',
+                    borderDash: [5, 5],
+                    borderWidth: 3,
+                    fill: false,
+                    pointRadius: 0,
+                    tension: 0.1,
+                    yAxisID: 'y2'
+                },
+                {
+                    id: 'hou-pm',
+                    label: 'HOU +/-',
+                    data: houTotalRecords,
+                    borderColor: '#FF00FF',
+                    borderDash: [5, 5],
+                    borderWidth: 3,
+                    fill: false,
+                    pointRadius: 0,
+                    tension: 0.1,
+                    yAxisID: 'y2'
+                }
+            ];
+
+            // Create checkboxes for each dataset
+            datasets.forEach(dataset => {
+                const div = document.createElement('div');
+                div.className = 'player-checkbox';
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = dataset.id;
+                checkbox.checked = true; // All lines visible by default
+                
+                const label = document.createElement('label');
+                label.htmlFor = dataset.id;
+                label.textContent = dataset.label;
+                
+                div.appendChild(checkbox);
+                div.appendChild(label);
+                checkboxContainer.appendChild(div);
+
+                // Add event listener
+                checkbox.addEventListener('change', function() {
+                    const index = datasets.findIndex(d => d.id === this.id);
+                    if (index !== -1) {
+                        chart.data.datasets[index].hidden = !this.checked;
+                        chart.update();
+                    }
+                });
+            });
+
+            const ctx = document.getElementById('gswWinLossChart').getContext('2d');
+            const chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: games,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Team Win/Loss Records Over Games',
+                            font: {
+                                size: 16,
+                                weight: 'bold'
+                            }
+                        },
+                        legend: {
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Game Number',
+                                font: {
+                                    weight: 'bold'
+                                }
+                            }
+                        },
+                        y: {
+                            min: -80,
+                            max: 80,
+                            position: 'left',
+                            ticks: {
+                                stepSize: 20,
+                                callback: function(value) {
+                                    return value >= 0 ? '+' + value : value;
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: 'Total Win/Loss Record',
+                                font: {
+                                    weight: 'bold'
+                                }
+                            }
+                        },
+                        y2: {
+                            min: -60,
+                            max: 60,
+                            position: 'right',
+                            grid: {
+                                drawOnChartArea: false
+                            },
+                            ticks: {
+                                stepSize: 20,
+                                callback: function(value) {
+                                    return value >= 0 ? '+' + value : value;
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: 'Game +/-',
+                                font: {
+                                    weight: 'bold'
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        } catch (error) {
+            console.error('Error loading team data:', error);
+        }
+    }
+
+    // Load all data when the page loads
     document.addEventListener('DOMContentLoaded', () => {
-      loadMVPData();
-      loadDPOYData();
+        loadMVPData();
+        loadDPOYData();
+        loadGSWData();
+        loadScoringData();
     });
 
     let scene, camera, renderer, controls;
@@ -1088,9 +1314,6 @@
         console.error('Error loading scoring data:', error);
       }
     }
-
-    // Load scoring data when the page loads
-    loadScoringData();
   </script>
 </body>
 </html>
