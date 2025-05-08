@@ -13,12 +13,12 @@
     .court-svg { 
       display: block; 
       margin: auto; 
-      background-color: rgb(95, 120, 167);
+      background-color: #D6D5B3;
       background-size: cover;
     }
     .line { fill: none; stroke: rgb(0, 0, 0); stroke-width: 2; }
     .key { fill: none; stroke: rgb(0, 0, 0); stroke-width: 2; }
-    .hotspot { fill: rgb(243, 165, 21); opacity: 0.6; }
+    .hotspot { fill: #ED7B84; opacity: 0.9; }
     .tooltip {
       position: absolute;
       background: rgba(0,0,0,0.7);
@@ -433,7 +433,7 @@
       const allCounts = data24Filtered.concat(data04Filtered, data09Filtered, data14Filtered, data19Filtered).map(d => d.count);
       const radiusScale = d3.scaleSqrt()
         .domain(d3.extent(allCounts))
-        .range([3,20]);
+        .range([4,15]);
 
       function renderChart(svg, data) {
         svg.selectAll("circle.hotspot").remove();
@@ -447,9 +447,24 @@
             .on("mouseover", (event, d) => {
               tooltip.transition().duration(200).style("opacity", 0.9);
               tooltip.html(`<strong>Shots:</strong> ${d.count}`);
+              // Get the SVG's position relative to the viewport
+              const svgRect = svg.node().getBoundingClientRect();
+              // Calculate position relative to the SVG
+              const x = event.clientX - svgRect.left;
+              const y = event.clientY - svgRect.top;
+              // Position tooltip relative to the SVG
+              tooltip.style("left", (svgRect.left + x + 10) + "px")
+                     .style("top", (svgRect.top + y - 28) + "px");
             })
             .on("mousemove", (event) => {
-              tooltip.style("left", (event.pageX+10)+"px").style("top", (event.pageY-28)+"px");
+              // Get the SVG's position relative to the viewport
+              const svgRect = svg.node().getBoundingClientRect();
+              // Calculate position relative to the SVG
+              const x = event.clientX - svgRect.left;
+              const y = event.clientY - svgRect.top;
+              // Position tooltip relative to the SVG
+              tooltip.style("left", (svgRect.left + x + 10) + "px")
+                     .style("top", (svgRect.top + y - 28) + "px");
             })
             .on("mouseout", () => {
               tooltip.transition().duration(500).style("opacity",0);
@@ -499,7 +514,16 @@
             BPG: cleanValue(d.bpg),
             TOVPG: cleanValue(d.tovpg),
             PFPG: cleanValue(d.pfpg),
-            FG: cleanValue(d['fg%'])
+            FG: cleanValue(d['fg%']),
+            // Store actual values
+            actualPPG: parseFloat(d.actual_ppg) || 0,
+            actualRPG: parseFloat(d.actual_rpg) || 0,
+            actualAPG: parseFloat(d.actual_apg) || 0,
+            actualSPG: parseFloat(d.actual_spg) || 0,
+            actualBPG: parseFloat(d.actual_bpg) || 0,
+            actualTOVPG: parseFloat(d.actual_tovpg) || 0,
+            actualPFPG: parseFloat(d.actual_pfpg) || 0,
+            actualFG: parseFloat(d.actual_fg) || 0
           };
         });
 
@@ -524,7 +548,7 @@
         allPlayersDiv.appendChild(allPlayersLabel);
         checkboxContainer.appendChild(allPlayersDiv);
 
-        // Add individual player options in the same order as the CSV
+        // Add individual player options
         data.forEach(player => {
           const div = document.createElement('div');
           div.className = 'player-checkbox';
@@ -543,7 +567,7 @@
           checkboxContainer.appendChild(div);
         });
 
-        // Add event listener for "All Players" checkbox
+        // Add event listeners
         allPlayersCheckbox.addEventListener('change', function() {
           const checkboxes = document.querySelectorAll('#mvpCheckboxContainer .player-checkbox input:not(#all-mvp-players)');
           checkboxes.forEach(checkbox => {
@@ -552,7 +576,6 @@
           updateChart();
         });
 
-        // Add event listeners for individual checkboxes
         document.querySelectorAll('#mvpCheckboxContainer .player-checkbox input:not(#all-mvp-players)').forEach(checkbox => {
           checkbox.addEventListener('change', function() {
             const allChecked = Array.from(document.querySelectorAll('#mvpCheckboxContainer .player-checkbox input:not(#all-mvp-players)'))
@@ -588,6 +611,16 @@
                 player.TOVPG,
                 player.PFPG,
                 player.FG
+              ],
+              actualData: [
+                player.actualPPG,
+                player.actualRPG,
+                player.actualAPG,
+                player.actualSPG,
+                player.actualBPG,
+                player.actualTOVPG,
+                player.actualPFPG,
+                player.actualFG
               ],
               fill: true,
               backgroundColor: `${color}33`,
@@ -647,6 +680,23 @@
                     text: 'MVP Stats Comparison (Percentile)',
                     font: {
                       size: 16
+                    }
+                  },
+                  tooltip: {
+                    callbacks: {
+                      label: function(context) {
+                        const dataset = context.dataset;
+                        const label = dataset.label || '';
+                        const value = context.raw;
+                        const stat = context.label;
+                        const actualValue = dataset.actualData[context.dataIndex];
+                        
+                        if (stat === 'FG%') {
+                          return [`${label}`, `${stat}: ${value}% (${actualValue}%)`];
+                        } else {
+                          return [`${label}`, `${stat}: ${value}% (${actualValue} ${stat.replace('PG', '')})`];
+                        }
+                      }
                     }
                   }
                 }
