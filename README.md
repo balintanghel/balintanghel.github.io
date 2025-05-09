@@ -3,7 +3,7 @@
 A projektünkben különböző NBA szezonok és játékosok adatait vizualizáljuk.
 
 Grafikonok:
-5 grafikon – NBA idényenkénti mezőnykísérletek (Field Goal Attempts)
+NBA idényenkénti mezőnykísérletek (Field Goal Attempts)
 – Megfigyelt szezonok: 2003, 2008, 2013, 2018, 2023
 – Típus: dobáshely-diagram (shot location chart)
 
